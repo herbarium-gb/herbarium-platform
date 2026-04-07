@@ -1,0 +1,79 @@
+{
+    # email you@example.com
+}
+
+{$HOST_PROD} {
+    root * /srv_prod
+    encode gzip
+
+    @health path /health
+    handle @health {
+        header Content-Type text/plain
+        respond "ok\n" 200
+    }
+
+    handle /iiif* {
+        reverse_proxy iiif_prod:12415 {
+            header_up Host {hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    @static path_regexp static ^/(idx/|assets/|favicon\.ico$|robots\.txt$)
+    handle @static {
+        try_files {path} {path}/index.html
+        header Cache-Control "public, max-age=604800, immutable"
+        file_server
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+
+    log {
+        level warn
+        output stdout
+        format console
+    }
+}
+
+{$HOST_STAGE} {
+    root * /srv_stage
+    encode gzip
+
+    @health path /health
+    handle @health {
+        header Content-Type text/plain
+        respond "ok\n" 200
+    }
+
+    handle /iiif* {
+        reverse_proxy iiif_stage:12415 {
+            header_up Host {hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    @static path_regexp static ^/(idx/|assets/|favicon\.ico$|robots\.txt$)
+    handle @static {
+        try_files {path} {path}/index.html
+        header Cache-Control "public, max-age=604800, immutable"
+        file_server
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+
+    log {
+        level warn
+        output stdout
+        format console
+    }
+}

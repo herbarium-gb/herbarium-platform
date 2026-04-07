@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Herbarium Image Viewer</title>
+
+  <!-- OpenSeadragon -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.0.0/openseadragon.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #000;
+      color: #4CAF50;
+      font-family: 'Roboto', sans-serif;
+      margin: 2rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    #subTitle {
+      font-size: 1.5rem;
+      color: #ccc;
+    }
+
+    #openseadragon {
+      width: 90vw;
+      height: 70vh;
+      margin: 1rem auto;
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dl-bar {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 2rem;
+      flex-wrap: wrap;
+      max-width: 90vw;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.65rem 1rem;
+      border: 2px solid #4CAF50;
+      color: #4CAF50;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: 0.2px;
+    }
+
+    .btn:hover {
+      background-color: #4CAF50;
+      color: #000;
+    }
+
+    .btn[data-busy="1"] {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .error-box {
+      background: rgba(255, 0, 0, 0.12);
+      border-left: 5px solid #ff4a4a;
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      max-width: 650px;
+      margin: 0 auto;
+      color: #ffaaaa;
+      font-size: 1.2rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: #777;
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>
+    Herbarium Image Viewer<br>
+    <span id="subTitle"></span>
+  </h1>
+
+  <div id="openseadragon"></div>
+
+  <div class="dl-bar" id="dlBar" style="display:none;">
+    <button id="dlSmall" class="btn" type="button">⬇ Small JPEG</button>
+    <button id="dlFull" class="btn" type="button">⬇ Large JPEG</button>
+  </div>
+
+  <footer>
+    &copy; 2025 Herbarium
+  </footer>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const IIIF_ROOT = '/iiif';
+    const SHARD_PREFIX_LEN = 7;
+    const DOWNLOAD_DURATION_MS = 3000;
+
+    const pathId = location.pathname.replace(/^\/+|\/+$/g, '');
+    const hasId = !!pathId;
+    const isValidGbId = id => /^GB-\d{7}$/.test(id);
+
+    const setSubtitle = text => {
+      $('subTitle').textContent = text;
+    };
+
+    const clearViewer = () => {
+      $('openseadragon').innerHTML = "";
+      $('dlBar').style.display = 'none';
+    };
+
+    const attachDownloadButton = (btnId, url, filename) => {
+      const btn = $(btnId);
+      if (!btn) return;
+
+      btn.addEventListener('click', () => {
+        if (btn.dataset.busy === '1') return;
+
+        const originalText = btn.textContent;
+        btn.dataset.busy = '1';
+        btn.textContent = 'Downloading…';
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => {
+          btn.dataset.busy = '0';
+          btn.textContent = originalText;
+        }, DOWNLOAD_DURATION_MS);
+      });
+    };
+
+    const showError = (code, id) => {
+      clearViewer();
+
+      const messages = {
+        no_id: ["No Image ID Provided", "No QR code or specimen ID was given in the address."],
+        invalid_id: ["Invalid Image ID", id ? `“${id}” is not a valid herbarium image ID.` : "Invalid ID."],
+        id_not_found: ["Image Not Found", id ? `No image could be found for ID “${id}”.` : "Image not found."],
+        image_server_down: ["Image Server Unavailable", "The image server is unavailable."],
+        system: ["Viewer Service Unavailable", "Unexpected viewer error."]
+      };
+
+      const [title, msg] = messages[code] || messages.system;
+
+      setSubtitle(title);
+
+      const box = document.createElement('div');
+      box.className = 'error-box';
+      box.textContent = msg;
+      $('openseadragon').appendChild(box);
+    };
+
+    if (!hasId) {
+      showError('no_id');
+    } else if (!isValidGbId(pathId)) {
+      showError('invalid_id', pathId);
+    } else {
+      const imageId = pathId;
+      setSubtitle(imageId);
+
+      (async () => {
+        try {
+          const shard = imageId.slice(0, SHARD_PREFIX_LEN);
+          const idxUrl = `/idx/${shard}.json`;
+
+          const resp = await fetch(idxUrl, { cache: 'no-cache' });
+          if (!resp.ok) return showError('id_not_found', imageId);
+
+          const map = await resp.json();
+          const rel = map[imageId];
+          if (!rel) return showError('id_not_found', imageId);
+
+          const jp2Base = `${IIIF_ROOT}/${rel}/${imageId}.jp2`;
+          const infoUrl = `${jp2Base}/info.json`;
+
+          const headResp = await fetch(infoUrl, { method: 'HEAD', cache: 'no-store' });
+          if (!headResp.ok) return showError('image_server_down', imageId);
+
+          OpenSeadragon({
+            id: 'openseadragon',
+            prefixUrl: 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.0.0/images/',
+            showNavigator: true,
+            navigatorPosition: 'BOTTOM_RIGHT',
+            crossOriginPolicy: 'Anonymous',
+            tileSources: infoUrl
+          });
+
+          const smallUrl = `${jp2Base}/full/1200,/0/default.jpg`;
+          const fullUrl = `${jp2Base}/full/full/0/default.jpg`;
+
+          attachDownloadButton('dlSmall', smallUrl, `${imageId}-small.jpg`);
+          attachDownloadButton('dlFull', fullUrl, `${imageId}-large.jpg`);
+
+          $('dlBar').style.display = 'flex';
+
+        } catch (e) {
+          console.error(e);
+          showError('system', pathId);
+        }
+      })();
+    }
+  </script>
+
+</body>
+</html>

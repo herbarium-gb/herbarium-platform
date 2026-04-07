@@ -1,0 +1,105 @@
+-- db/init/001_init.sql
+
+CREATE SCHEMA IF NOT EXISTS raw;
+
+CREATE TABLE IF NOT EXISTS raw.fm_specimen (
+    "recordId" text PRIMARY KEY,
+    "modId" text,
+    "AccessionNo" text,
+    "Genus" text,
+    "Species" text,
+    "SspVarForm" text,
+    "HybridName" text,
+    "Continent" text,
+    "Country" text,
+    "Province" text,
+    "District" text,
+    "Original_name" text,
+    "Original_text" text,
+    "Locality" text,
+    "Year" text,
+    "Month" text,
+    "Day" text,
+    "CollectorOriginal" text,
+    "Collectornumber" text,
+    "Notes" text,
+    "Comments" text,
+    "AltitudeLow" text,
+    "AltitudeHigh" text,
+    "LatitudeDegree" text,
+    "LatitudeMinute" text,
+    "LatitudeSecond" text,
+    "LatitudeDirection" text,
+    "LongitudeDegree" text,
+    "LongitudeMinute" text,
+    "LongitudeSecond" text,
+    "LongitudeDirection" text,
+    "TypeStatus" text,
+    "Basionym" text,
+    "Auctor" text,
+    "_Created" text,
+    "_Modified" text,
+    "ScientificName" text,
+    "Collectioncode" text,
+    "RiketsN" text,
+    "RiketsO" text,
+    "RUBIN" text,
+    "Sweref_N" text,
+    "Sweref_O" text,
+    "Institutioncode" text,
+    "Image1" text
+);
+
+CREATE TABLE IF NOT EXISTS public.dwc_occurrence (
+    "id" text PRIMARY KEY,
+    "institutionCode" text,
+    "collectionCode" text,
+    "basisOfRecord" text,
+    "occurrenceID" text,
+    "occurrenceStatus" text,
+    "catalogNumber" text,
+    "recordNumber" text,
+    "recordedBy" text,
+    "associatedMedia" text,
+    "occurrenceRemarks" text,
+    "verbatimLabel" text,
+    "eventDate" text,
+    "year" text,
+    "month" text,
+    "day" text,
+    "continent" text,
+    "country" text,
+    "stateProvince" text,
+    "county" text,
+    "locality" text,
+    "decimalLatitude" text,
+    "decimalLongitude" text,
+    "geodeticDatum" text,
+    "georeferenceRemarks" text,
+    "verbatimLatitude" text,
+    "verbatimLongitude" text,
+    "verbatimCoordinateSystem" text,
+    "verbatimSRS" text,
+    "dynamicProperties" text,
+    "scientificName" text,
+    "scientificNameAuthorship" text,
+    "originalNameUsage" text,
+    "verbatimIdentification" text,
+    "identificationRemarks" text,
+    "genus" text,
+    "specificEpithet" text,
+    "infraspecificEpithet" text,
+    "taxonRemarks" text,
+    "typeStatus" text,
+    "minimumElevationInMeters" text,
+    "maximumElevationInMeters" text
+);
+
+CREATE INDEX IF NOT EXISTS idx_raw_modified
+    ON raw.fm_specimen ("_Modified");
+
+CREATE INDEX IF NOT EXISTS idx_dwc_occurrence_occurrenceid
+    ON public.dwc_occurrence ("occurrenceID");
+
+CREATE INDEX IF NOT EXISTS idx_dwc_occurrence_catalognumber
+    ON public.dwc_occurrence ("catalogNumber");

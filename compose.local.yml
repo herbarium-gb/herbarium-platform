@@ -1,0 +1,44 @@
+x-iiif-base: &iiif-base
+  image: uolibraries/rais:latest
+  restart: unless-stopped
+  environment:
+    RAIS_ADDRESS: :12415
+    RAIS_TILEPATH: /var/local/images
+    RAIS_TILECACHELEN: 10000
+  volumes:
+    - ${IMAGE_DATA_PATH}:/var/local/images:ro
+  expose:
+    - "12415"
+
+services:
+  iiif_prod:
+    <<: *iiif-base
+    environment:
+      RAIS_ADDRESS: :12415
+      RAIS_IIIFURL: http://localhost:8080/iiif
+      RAIS_LOGLEVEL: WARN
+
+  iiif_stage:
+    <<: *iiif-base
+    build:
+      context: ./iiif
+    environment:
+      RAIS_ADDRESS: :12415
+      RAIS_IIIFURL: http://localhost:8081/iiif
+      RAIS_LOGLEVEL: DEBUG
+
+  web:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - iiif_prod
+      - iiif_stage
+    ports:
+      - "8080:80"
+      - "8081:81"
+    volumes:
+      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - ./viewer/prod:/srv_prod:ro
+      - ./viewer/stage:/srv_stage:ro
+      - caddy_data:/data
+      - caddy_config:/config

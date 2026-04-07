@@ -1,0 +1,2 @@
+# Helper scripts (viewer shards)
+python-dotenv>=1.0
