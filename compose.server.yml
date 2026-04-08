@@ -43,3 +43,8 @@ services:
       - ./viewer/stage:/srv_stage:ro,Z
       - caddy_data:/data
       - caddy_config:/config
+
+  db:
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro,Z
