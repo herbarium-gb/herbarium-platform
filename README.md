@@ -1,6 +1,6 @@
 # herbarium-platform
 
-Minimal platform for serving herbarium images using a IIIF image server (currently RAIS), fronted by Caddy and viewed with OpenSeadragon.
+Platform for serving herbarium images using a IIIF image server (currently RAIS), fronted by Caddy and viewed with OpenSeadragon.
 
 ## Overview
 
@@ -70,7 +70,7 @@ The included PostgreSQL database is intended as a publication layer for specimen
 
 Typical use:
 
-- data is prepared externally (e.g. via `hbdb-to-dwc`)
+- data is prepared externally (e.g. via [herbarium-data](https://github.com/herbarium-gb/herbarium-data))
 - data is loaded into PostgreSQL
 - IPT connects directly to the database and publishes datasets
 
