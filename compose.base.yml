@@ -12,10 +12,6 @@ services:
     ports:
       - "5432:5432"
 
-web:
-  env_file:
-    - .env
-
 volumes:
   postgres_data:
   caddy_data:

@@ -1,21 +1,21 @@
+x-iiif-env: &iiif-env
+  RAIS_ADDRESS: :12415
+  RAIS_TILEPATH: /var/local/images
+  RAIS_TILECACHELEN: 10000
+
 x-iiif-base: &iiif-base
   image: uolibraries/rais:latest
   restart: unless-stopped
-  environment:
-    RAIS_ADDRESS: :12415
-    RAIS_TILEPATH: /var/local/images
-    RAIS_TILECACHELEN: 10000
   volumes:
-    - ${IMAGE_DATA_PATH}/data/Delivery:/var/local/images:ro,Z
+    - ${IMAGE_DATA_PATH}:/var/local/images:ro,Z
   expose:
     - "12415"
 
 services:
   iiif_prod:
     <<: *iiif-base
-    image: uolibraries/rais:latest
     environment:
-      RAIS_ADDRESS: :12415
+      <<: *iiif-env
       RAIS_IIIFURL: https://${HOST_PROD}/iiif
       RAIS_LOGLEVEL: WARN
 
@@ -24,13 +24,15 @@ services:
     build:
       context: ./iiif
     environment:
-      RAIS_ADDRESS: :12415
+      <<: *iiif-env
       RAIS_IIIFURL: https://${HOST_STAGE}/iiif
       RAIS_LOGLEVEL: DEBUG
 
   web:
     image: caddy:2
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       - iiif_prod
       - iiif_stage
