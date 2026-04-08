@@ -13,7 +13,7 @@ x-iiif-base: &iiif-base
 services:
   iiif_prod:
     <<: *iiif-base
-    image: uolibraries/rais:stable
+    image: uolibraries/rais:latest
     environment:
       RAIS_ADDRESS: :12415
       RAIS_IIIFURL: https://${HOST_PROD}/iiif
