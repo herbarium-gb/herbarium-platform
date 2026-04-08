@@ -13,6 +13,22 @@ Minimal platform for serving herbarium images using a IIIF image server (current
   - server staging
   - server production
 
+## How prod and stage are separated
+
+On the server, prod and stage use the same Caddy container, but they are still separated by hostname-based routing.
+
+Caddy serves different content depending on which host is requested:
+
+- `$HOST_PROD` → production viewer files and production IIIF service
+- `$HOST_STAGE` → staging viewer files and staging IIIF service
+
+This means one web container can serve two different environments:
+
+- prod uses `viewer/prod` and `iiif_prod`
+- stage uses `viewer/stage` and `iiif_stage`
+
+So there is only one Caddy container, but it routes requests to different HTML roots and different backend services.
+
 ## Requirements
 
 - Docker + Docker Compose (or Podman equivalents)
