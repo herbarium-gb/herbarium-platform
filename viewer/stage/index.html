@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Herbarium Image Viewer</title>
+  <title>Herbarium GB Image Viewer</title>
 
   <!-- OpenSeadragon -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.0.0/openseadragon.min.js"></script>
 
   <!-- Google Fonts -->
@@ -102,7 +103,7 @@
 <body>
 
   <h1>
-    Herbarium Image Viewer<br>
+    Herbarium GB Image Viewer<br>
     <span id="subTitle"></span>
   </h1>
 
@@ -114,7 +115,7 @@
   </div>
 
   <footer>
-    &copy; 2025 Herbarium
+    &copy; 2025 Herbarium GB
   </footer>
 
   <script>
@@ -167,9 +168,9 @@
 
       const messages = {
         no_id: ["No Image ID Provided", "No QR code or specimen ID was given in the address."],
-        invalid_id: ["Invalid Image ID", id ? `“${id}” is not a valid herbarium image ID.` : "Invalid ID."],
-        id_not_found: ["Image Not Found", id ? `No image could be found for ID “${id}”.` : "Image not found."],
-        image_server_down: ["Image Server Unavailable", "The image server is unavailable."],
+        invalid_id: ["Invalid Image ID", id ? `"${id}" is not a valid Herbarium GB image ID.` : "Invalid ID."],
+        id_not_found: ["Image Not Found", id ? `No image could be found for ID "${id}".` : "Not found."],
+        rais_down: ["Image Server Unavailable", "The RAIS image server is offline."],
         system: ["Viewer Service Unavailable", "Unexpected viewer error."]
       };
 
@@ -196,7 +197,7 @@
           const shard = imageId.slice(0, SHARD_PREFIX_LEN);
           const idxUrl = `/idx/${shard}.json`;
 
-          const resp = await fetch(idxUrl, { cache: 'no-cache' });
+          const resp = await fetch(idxUrl);
           if (!resp.ok) return showError('id_not_found', imageId);
 
           const map = await resp.json();
@@ -206,17 +207,19 @@
           const jp2Base = `${IIIF_ROOT}/${rel}/${imageId}.jp2`;
           const infoUrl = `${jp2Base}/info.json`;
 
-          const headResp = await fetch(infoUrl, { method: 'HEAD', cache: 'no-store' });
-          if (!headResp.ok) return showError('image_server_down', imageId);
-
           OpenSeadragon({
             id: 'openseadragon',
             prefixUrl: 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.0.0/images/',
             showNavigator: true,
             navigatorPosition: 'BOTTOM_RIGHT',
             crossOriginPolicy: 'Anonymous',
-            tileSources: infoUrl
+            tileSources: infoUrl,
+            ajaxWithCredentials: false
           });
+
+          document.getElementById('openseadragon').addEventListener('open-failed', () => {
+            showError('rais_down', imageId);
+          }, { once: true });
 
           const smallUrl = `${jp2Base}/full/1200,/0/default.jpg`;
           const fullUrl = `${jp2Base}/full/full/0/default.jpg`;
