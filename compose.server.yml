@@ -1,7 +1,7 @@
 x-iiif-env: &iiif-env
   RAIS_ADDRESS: :12415
   RAIS_TILEPATH: /var/local/images
-  RAIS_TILECACHELEN: 10000
+  RAIS_TILECACHELEN: 50000
 
 x-iiif-base: &iiif-base
   image: uolibraries/rais:latest
