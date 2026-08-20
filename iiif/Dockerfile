@@ -20,7 +20,7 @@ ARG CANTALOUPE_COMMIT=613de29917707f45726b15df8896d3a6545a273c
 # ("noble") has what it needs. If eclipse-temurin ever drops the -noble
 # tag, either pin an older Grok release or build Grok from source instead.
 
-FROM maven:3.9-eclipse-temurin-21 AS cantaloupe-build
+FROM docker.io/library/maven:3.9-eclipse-temurin-21 AS cantaloupe-build
 ARG CANTALOUPE_COMMIT
 
 RUN git clone https://github.com/cantaloupe-project/cantaloupe.git /src \
@@ -32,7 +32,7 @@ RUN mvn -B -DskipTests -q package \
 
 # ---------------------------------------------------------------------------
 
-FROM eclipse-temurin:21-jre-noble AS fetch
+FROM docker.io/library/eclipse-temurin:21-jre-noble AS fetch
 
 ARG GROK_VERSION=v20.3.11
 
@@ -49,7 +49,7 @@ RUN curl -sL -o grok.zip \
 
 # ---------------------------------------------------------------------------
 
-FROM eclipse-temurin:21-jre-noble
+FROM docker.io/library/eclipse-temurin:21-jre-noble
 
 RUN groupadd -r cantaloupe && useradd -r -g cantaloupe cantaloupe
 
