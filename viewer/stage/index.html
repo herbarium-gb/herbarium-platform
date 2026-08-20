@@ -204,7 +204,11 @@
           const rel = map[imageId];
           if (!rel) return showError('id_not_found', imageId);
 
-          const jp2Base = `${IIIF_ROOT}/${rel}/${imageId}.jp2`;
+          // Cantaloupe (unlike RAIS) requires slashes within an identifier
+          // to be encoded; "$" is configured as the substitute character
+          // (see iiif/cantaloupe.properties: slash_substitute).
+          const identifier = `${rel}/${imageId}.jp2`.replace(/\//g, '$');
+          const jp2Base = `${IIIF_ROOT}/${identifier}`;
           const infoUrl = `${jp2Base}/info.json`;
 
           OpenSeadragon({
