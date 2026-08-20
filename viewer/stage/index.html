@@ -120,7 +120,8 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const IIIF_ROOT = '/iiif';
+    // Cantaloupe (unlike RAIS) requires the IIIF API version in the path.
+    const IIIF_ROOT = '/iiif/3';
     const SHARD_PREFIX_LEN = 7;
     const DOWNLOAD_DURATION_MS = 3000;
 
