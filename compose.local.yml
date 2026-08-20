@@ -20,7 +20,6 @@ services:
 
   iiif_stage:
     <<: *iiif-base
-    image: herbarium-iiif-stage:latest
     build:
       context: ./iiif
     environment:
