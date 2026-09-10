@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS public.dwc_occurrence (
     "collectionCode" text,
     "basisOfRecord" text,
     "occurrenceID" text,
+    "digitalSpecimenID" text,
     "occurrenceStatus" text,
     "catalogNumber" text,
     "recordNumber" text,
