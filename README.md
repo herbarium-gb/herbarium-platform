@@ -58,6 +58,16 @@ or
 - https://$HOST_PROD  
 - https://$HOST_STAGE  
 
+## Deploying changes
+
+Files under `viewer/` and `data/` are directory mounts — a `git pull` on the
+server takes effect immediately, no container action.
+
+`caddy/Caddyfile.server` is a single-file mount: `git pull` and `caddy reload`
+do **not** pick it up. Run `docker compose ... up -d --force-recreate web`,
+then `sudo firewall-cmd --reload` — a container recreate otherwise displaces
+the public 80/443 → 8080/8443 forward and the site goes down until reload.
+
 ## Makefile
 
 A `Makefile` is included to simplify common tasks such as starting the stack and generating shards.
