@@ -12,7 +12,10 @@
         respond "ok\n" 200
     }
 
-    handle /iiif* {
+    # IIIF info.json — cache kort (innehåller bildmått, ändras ej)
+    @iiif_info path_regexp ^/iiif/.*/info\.json$
+    handle @iiif_info {
+        header Cache-Control "public, max-age=86400"
         reverse_proxy iiif_prod:12415 {
             header_up Host {hostport}
             header_up X-Real-IP {remote_host}
@@ -21,10 +24,28 @@
         }
     }
 
-    @static path_regexp static ^/(idx/|assets/|favicon\.ico$|robots\.txt$)
+    # IIIF bildregioner — cache en vecka, revaliderar därefter (self-heal om en bild rättas)
+    handle /iiif* {
+        header Cache-Control "public, max-age=604800"
+        reverse_proxy iiif_prod:12415 {
+            header_up Host {hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Shard index — must reflect new images immediately, so revalidate every time
+    @idx path /idx/*
+    handle @idx {
+        header Cache-Control "no-cache"
+        file_server
+    }
+
+    @static path_regexp static ^/(assets/|favicon\.ico$|robots\.txt$)
     handle @static {
         try_files {path} {path}/index.html
-        header Cache-Control "public, max-age=604800, immutable"
+        header Cache-Control "public, max-age=604800"
         file_server
     }
 
@@ -50,7 +71,9 @@
         respond "ok\n" 200
     }
 
-    handle /iiif* {
+    @iiif_info path_regexp ^/iiif/.*/info\.json$
+    handle @iiif_info {
+        header Cache-Control "public, max-age=86400"
         reverse_proxy iiif_stage:12415 {
             header_up Host {hostport}
             header_up X-Real-IP {remote_host}
@@ -59,10 +82,27 @@
         }
     }
 
-    @static path_regexp static ^/(idx/|assets/|favicon\.ico$|robots\.txt$)
+    handle /iiif* {
+        header Cache-Control "public, max-age=604800"
+        reverse_proxy iiif_stage:12415 {
+            header_up Host {hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Shard index — must reflect new images immediately, so revalidate every time
+    @idx path /idx/*
+    handle @idx {
+        header Cache-Control "no-cache"
+        file_server
+    }
+
+    @static path_regexp static ^/(assets/|favicon\.ico$|robots\.txt$)
     handle @static {
         try_files {path} {path}/index.html
-        header Cache-Control "public, max-age=604800, immutable"
+        header Cache-Control "public, max-age=604800"
         file_server
     }
 
