@@ -73,12 +73,16 @@ for root, _, files in os.walk(scan_root):
         total_files += 1
 
 # --- Write output ------------------------------------------------
-# Merge into each shard file rather than overwrite it: a partial scan_root
-# only ever sees a subset of the images that belong to a given shard key, so
-# blindly overwriting would drop every entry found by earlier runs outside
-# this subpath. This also means a shard file never sheds entries for images
-# that were deleted from disk since the last full (no-subpath) run — run
-# without a subpath occasionally to clear those out.
+# A partial run (subpath given) merges into each shard file: it only ever
+# sees a subset of the images that belong to a given shard key, so
+# overwriting would drop every entry found by earlier runs outside this
+# subpath. A full run (no subpath) instead replaces each shard file's
+# content outright — it saw the whole tree, so anything missing from
+# `entries` genuinely no longer exists on disk and should be dropped, not
+# kept around forever. Run without a subpath occasionally (or whenever a
+# file was deleted) so removals actually take effect.
+
+is_full_run = len(sys.argv) == 2
 
 for shard_key, entries in shards.items():
     shard_path = os.path.join(output_dir, f"{shard_key}.json")
@@ -89,17 +93,30 @@ for shard_key, entries in shards.items():
             existing = json.load(f)
 
     # len(entries) is every file this run's walk found under scan_root — that's
-    # not the same as how many are actually new to the shard, since a partial
-    # rerun walks the same files again every time. Diff against what was
-    # already on disk so the count means what it says.
+    # not the same as how many are actually new to the shard, since a rerun
+    # walks the same files again every time. Diff against what was already on
+    # disk so the count means what it says.
     changed_count = sum(1 for k, v in entries.items() if existing.get(k) != v)
-    existing.update(entries)
+    new_content = entries if is_full_run else {**existing, **entries}
+    dropped_count = len(existing) - len(new_content) if is_full_run else 0
 
     with open(shard_path, "w", encoding="utf-8") as f:
-        json.dump(existing, f, indent=2, ensure_ascii=False)
+        json.dump(new_content, f, indent=2, ensure_ascii=False)
 
-    print(f"{shard_path} → {len(existing)} entries "
-          f"({changed_count} new/changed, {len(entries)} scanned this run)")
+    note = f", {dropped_count} dropped" if dropped_count > 0 else ""
+    print(f"{shard_path} → {len(new_content)} entries "
+          f"({changed_count} new/changed, {len(entries)} scanned this run{note})")
+
+if is_full_run:
+    # A shard whose last remaining image was deleted never appears in `shards`
+    # at all, so the loop above never touches its file — remove it here
+    # instead, now that we know (full walk) it's genuinely empty.
+    live_shard_files = {f"{key}.json" for key in shards}
+    for name in os.listdir(output_dir):
+        if name.endswith(".json") and name not in live_shard_files:
+            stale_path = os.path.join(output_dir, name)
+            os.remove(stale_path)
+            print(f"Removed stale shard file (no live images left): {stale_path}")
 
 print(f"\nTotal {total_files} .jp2 files found under {scan_root}, "
       f"split into {len(shards)} shard(s)")
