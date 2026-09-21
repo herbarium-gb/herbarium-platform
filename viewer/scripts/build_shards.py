@@ -83,18 +83,26 @@ for root, _, files in os.walk(scan_root):
 # without needing a slow full-tree rebuild to do it.
 
 scan_relpath = os.path.relpath(scan_root, base_dir).replace("\\", "/")
+is_full_run = scan_relpath == "."
 
 
 def owned_by_this_run(entry_dir: str) -> bool:
-    if scan_relpath == ".":
+    if is_full_run:
         return True
     return entry_dir == scan_relpath or entry_dir.startswith(scan_relpath + "/")
 
 
-# Shard files can hold owned entries this run found nothing for at all (e.g.
-# every image that used to be in scan_root got deleted) — reading the small
-# existing shard files to check is cheap, unlike walking the image tree.
-shard_keys = set(shards) | {n[:-5] for n in os.listdir(output_dir) if n.endswith(".json")}
+# A shard can hold owned entries this run's walk found nothing for at all
+# (e.g. every image that used to be in scan_root got deleted) — checking
+# every existing shard file for that is only worth it on a full run (already
+# the heavier, occasional pass) or when this run's walk found zero files at
+# all (the only situation where a partial run has no other way to know which
+# shard(s) it needs to reconcile). A normal partial run with live files stays
+# scoped to just the shard(s) those files belong to.
+if is_full_run or total_files == 0:
+    shard_keys = set(shards) | {n[:-5] for n in os.listdir(output_dir) if n.endswith(".json")}
+else:
+    shard_keys = set(shards)
 
 for shard_key in sorted(shard_keys):
     shard_path = os.path.join(output_dir, f"{shard_key}.json")
