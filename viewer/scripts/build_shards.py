@@ -88,12 +88,18 @@ for shard_key, entries in shards.items():
         with open(shard_path, encoding="utf-8") as f:
             existing = json.load(f)
 
+    # len(entries) is every file this run's walk found under scan_root — that's
+    # not the same as how many are actually new to the shard, since a partial
+    # rerun walks the same files again every time. Diff against what was
+    # already on disk so the count means what it says.
+    changed_count = sum(1 for k, v in entries.items() if existing.get(k) != v)
     existing.update(entries)
 
     with open(shard_path, "w", encoding="utf-8") as f:
         json.dump(existing, f, indent=2, ensure_ascii=False)
 
-    print(f"{shard_path} → {len(existing)} entries ({len(entries)} new/updated this run)")
+    print(f"{shard_path} → {len(existing)} entries "
+          f"({changed_count} new/changed, {len(entries)} scanned this run)")
 
 print(f"\nTotal {total_files} .jp2 files found under {scan_root}, "
       f"split into {len(shards)} shard(s)")
