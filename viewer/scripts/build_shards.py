@@ -73,50 +73,58 @@ for root, _, files in os.walk(scan_root):
         total_files += 1
 
 # --- Write output ------------------------------------------------
-# A partial run (subpath given) merges into each shard file: it only ever
-# sees a subset of the images that belong to a given shard key, so
-# overwriting would drop every entry found by earlier runs outside this
-# subpath. A full run (no subpath) instead replaces each shard file's
-# content outright — it saw the whole tree, so anything missing from
-# `entries` genuinely no longer exists on disk and should be dropped, not
-# kept around forever. Run without a subpath occasionally (or whenever a
-# file was deleted) so removals actually take effect.
+# A run only "owns" entries whose recorded directory is scan_root itself or
+# somewhere under it — that's the part of the tree it actually looked at.
+# Owned entries not rediscovered this run are genuinely gone and get
+# dropped; everything outside scan_root is left completely untouched,
+# whether this is a full run (scan_root == base_dir, so it owns everything)
+# or a partial one scoped to a single new/changed directory. That makes a
+# partial rerun of just a test folder correctly reflect deletions there,
+# without needing a slow full-tree rebuild to do it.
 
-is_full_run = len(sys.argv) == 2
+scan_relpath = os.path.relpath(scan_root, base_dir).replace("\\", "/")
 
-for shard_key, entries in shards.items():
+
+def owned_by_this_run(entry_dir: str) -> bool:
+    if scan_relpath == ".":
+        return True
+    return entry_dir == scan_relpath or entry_dir.startswith(scan_relpath + "/")
+
+
+# Shard files can hold owned entries this run found nothing for at all (e.g.
+# every image that used to be in scan_root got deleted) — reading the small
+# existing shard files to check is cheap, unlike walking the image tree.
+shard_keys = set(shards) | {n[:-5] for n in os.listdir(output_dir) if n.endswith(".json")}
+
+for shard_key in sorted(shard_keys):
     shard_path = os.path.join(output_dir, f"{shard_key}.json")
+    entries = shards.get(shard_key, {})
 
     existing = {}
     if os.path.exists(shard_path):
         with open(shard_path, encoding="utf-8") as f:
             existing = json.load(f)
 
-    # len(entries) is every file this run's walk found under scan_root — that's
-    # not the same as how many are actually new to the shard, since a rerun
-    # walks the same files again every time. Diff against what was already on
-    # disk so the count means what it says.
+    # Keep anything not owned by this run untouched; an owned entry only
+    # survives if this run's walk rediscovered it.
+    kept = {k: v for k, v in existing.items() if not owned_by_this_run(v) or k in entries}
+    new_content = {**kept, **entries}
+
+    # len(entries) is every file this run's walk found for this shard — not
+    # the same as how many are actually new, since a rerun walks the same
+    # files again every time. Diff against what was already on disk instead.
     changed_count = sum(1 for k, v in entries.items() if existing.get(k) != v)
-    new_content = entries if is_full_run else {**existing, **entries}
-    dropped_count = len(existing) - len(new_content) if is_full_run else 0
+    dropped_count = len(existing) - len(kept)
 
-    with open(shard_path, "w", encoding="utf-8") as f:
-        json.dump(new_content, f, indent=2, ensure_ascii=False)
-
-    note = f", {dropped_count} dropped" if dropped_count > 0 else ""
-    print(f"{shard_path} → {len(new_content)} entries "
-          f"({changed_count} new/changed, {len(entries)} scanned this run{note})")
-
-if is_full_run:
-    # A shard whose last remaining image was deleted never appears in `shards`
-    # at all, so the loop above never touches its file — remove it here
-    # instead, now that we know (full walk) it's genuinely empty.
-    live_shard_files = {f"{key}.json" for key in shards}
-    for name in os.listdir(output_dir):
-        if name.endswith(".json") and name not in live_shard_files:
-            stale_path = os.path.join(output_dir, name)
-            os.remove(stale_path)
-            print(f"Removed stale shard file (no live images left): {stale_path}")
+    if new_content:
+        with open(shard_path, "w", encoding="utf-8") as f:
+            json.dump(new_content, f, indent=2, ensure_ascii=False)
+        note = f", {dropped_count} dropped" if dropped_count else ""
+        print(f"{shard_path} → {len(new_content)} entries "
+              f"({changed_count} new/changed, {len(entries)} scanned this run{note})")
+    elif os.path.exists(shard_path):
+        os.remove(shard_path)
+        print(f"Removed stale shard file (no live images left): {shard_path}")
 
 print(f"\nTotal {total_files} .jp2 files found under {scan_root}, "
       f"split into {len(shards)} shard(s)")
