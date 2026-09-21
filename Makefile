@@ -39,12 +39,14 @@ ps-server:
 	@$(DC_SERVER) ps || true
 
 # --- Shards ---
+# SUBPATH (optional): scan only this directory under IMAGE_DATA_PATH instead
+# of the whole tree, e.g. make shards-prod SUBPATH=2023/09/21/new-batch
 
 shards-local:
-	python3 viewer/scripts/build_shards.py local
+	python3 viewer/scripts/build_shards.py local $(SUBPATH)
 
 shards-stage:
-	python3 viewer/scripts/build_shards.py stage
+	python3 viewer/scripts/build_shards.py stage $(SUBPATH)
 
 shards-prod:
-	python3 viewer/scripts/build_shards.py prod
+	python3 viewer/scripts/build_shards.py prod $(SUBPATH)
