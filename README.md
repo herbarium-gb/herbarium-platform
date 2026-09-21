@@ -74,6 +74,19 @@ A `Makefile` is included to simplify common tasks such as starting the stack and
 
 See the `Makefile` for available commands.
 
+## Tests
+
+`viewer/scripts/test_build_shards.py` covers `build_shards.py`'s shard-key
+spreading and full/partial-run reconciliation (what gets dropped vs. left
+alone) — run it with the same interpreter used for the script itself, so
+`python-dotenv` is importable:
+
+```
+viewer/.venv/bin/python viewer/scripts/test_build_shards.py -v
+```
+
+No other part of the repo has automated tests yet.
+
 ## PostgreSQL and IPT
 
 The included PostgreSQL database is intended as a publication layer for specimen data.
