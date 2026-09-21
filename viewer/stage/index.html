@@ -121,12 +121,17 @@
   <script>
     const $ = id => document.getElementById(id);
     const IIIF_ROOT = '/iiif';
-    const SHARD_PREFIX_LEN = 7;
     const DOWNLOAD_DURATION_MS = 3000;
 
     const pathId = location.pathname.replace(/^\/+|\/+$/g, '');
     const hasId = !!pathId;
-    const isValidGbId = id => /^GB-\d{7}$/.test(id);
+    const isValidGbId = id => /^GB-(\d{7}|Folder_\d{7})$/.test(id);
+
+    // Must match shard_key_for() in viewer/scripts/build_shards.py — a
+    // plain 7-char slice would put every Folder-ID label in the same
+    // "GB-Fold" shard, since "GB-Folder_" is itself a 10-char literal
+    // prefix that never varies in its first 7 characters.
+    const shardKeyFor = id => id.startsWith('GB-Folder_') ? id.slice(0, 14) : id.slice(0, 7);
 
     const setSubtitle = text => {
       $('subTitle').textContent = text;
@@ -194,7 +199,7 @@
 
       (async () => {
         try {
-          const shard = imageId.slice(0, SHARD_PREFIX_LEN);
+          const shard = shardKeyFor(imageId);
           const idxUrl = `/idx/${shard}.json`;
 
           const resp = await fetch(idxUrl);
