@@ -5,7 +5,8 @@
 # IIIF-regler, gemensamma för prod och stage.
 # Användning: import iiif <RAIS-tjänst>
 (iiif) {
-    # Korta bildadresser: /GB-1155095.jpg → 302 till
+    # Korta bildadresser: /GB-1155095.jpg serveras direkt (ingen redirect, så
+    # den korta adressen står kvar i adressfältet) från
     # /iiif/{rel}/GB-1155095.jp2/full/,3500/0/default.jpg
     # {rel} slås upp i samma shard-fil som visaren läser (/idx/<shard>.json).
     # Shard-nyckeln (grupp 2) ska matcha shardKeyFor() i viewer/*/index.html:
@@ -15,8 +16,21 @@
         intercept {
             @found header X-Rel *
             handle_response @found {
+                # Rensa rubriker som ärvts från uppslaget ovan (text/plain, längd 0)
                 header -X-Rel
-                redir * /iiif/{resp.header.X-Rel}/{re.short.1}.jp2/full/,3500/0/default.jpg 302
+                header -Content-Length
+                header {
+                    Content-Type image/jpeg
+                    Cache-Control "public, max-age=604800"
+                    match status 2xx
+                }
+                rewrite * /iiif/{resp.header.X-Rel}/{re.short.1}.jp2/full/,3500/0/default.jpg
+                reverse_proxy {args[0]}:12415 {
+                    header_up Host {hostport}
+                    header_up X-Real-IP {remote_host}
+                    header_up X-Forwarded-For {remote_host}
+                    header_up X-Forwarded-Proto {scheme}
+                }
             }
             handle_response {
                 header -Content-Length
