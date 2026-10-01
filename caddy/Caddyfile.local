@@ -10,7 +10,7 @@
     @health path /health
     handle @health {
         header Content-Type text/plain
-        respond "ok\n" 200
+        respond "ok" 200
     }
 
     handle /iiif* {
@@ -42,7 +42,7 @@
     @health path /health
     handle @health {
         header Content-Type text/plain
-        respond "ok\n" 200
+        respond "ok" 200
     }
 
     handle /iiif* {
