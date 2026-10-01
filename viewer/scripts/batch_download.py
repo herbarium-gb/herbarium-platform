@@ -5,9 +5,10 @@ Batch download of herbarium images.
 Usage:
   python batch_download.py ids.txt [options]
 
-ids.txt should contain one GB-ID per line, e.g.:
+The input file can be a plain list of GB-IDs or a TSV export from the
+database. A GB-ID is extracted from each line, wherever it appears:
   GB-0500017
-  GB-0500018
+  Pinaceae\tAbies\talba\tNordic\thttps://botmus.gu.se/GB-0500017
 
 Options:
   --base-url URL    Base URL of the herbarium viewer (required)
@@ -56,7 +57,7 @@ def download_one(image_id: str, base_url: str, out_dir: Path) -> tuple[str, bool
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("ids_file", help="Text file with one GB-ID per line")
+    parser.add_argument("ids_file", help="Plain GB-ID list or TSV export from the database")
     parser.add_argument("--base-url", required=True,
                         help="Base URL of the IIIF viewer, e.g. https://botmus.gu.se")
     parser.add_argument("--out", default="downloads",

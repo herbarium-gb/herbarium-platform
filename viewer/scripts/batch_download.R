@@ -5,9 +5,10 @@
 # Usage:
 #   Rscript batch_download.R ids.txt --base-url URL [--out DIR]
 #
-# ids.txt should contain one GB-ID per line, e.g.:
+# The input file can be a plain list of GB-IDs or a TSV export from the
+# database. A GB-ID is extracted from each line, wherever it appears:
 #   GB-0500017
-#   GB-0500018
+#   Pinaceae	Abies	alba	Nordic	https://botmus.gu.se/GB-0500017
 #
 # Options:
 #   --base-url  Base URL of the IIIF viewer (required),
