@@ -57,12 +57,12 @@ raw_lines <- readLines(ids_file, warn = FALSE)
 raw_lines <- trimws(raw_lines)
 raw_lines <- raw_lines[nchar(raw_lines) > 0 & !startsWith(raw_lines, "#")]
 
-valid <- grepl("^GB-\\d{7}$", raw_lines)
-if (any(!valid)) {
-  cat("Skipping invalid IDs:\n")
-  cat(paste0("  ", raw_lines[!valid], "\n"))
+ids <- regmatches(raw_lines, regexpr("GB-\\d{7}", raw_lines))
+no_match <- raw_lines[!grepl("GB-\\d{7}", raw_lines)]
+if (length(no_match) > 0) {
+  cat("Skipping lines with no GB-ID:\n")
+  cat(paste0("  ", no_match, "\n"))
 }
-ids <- raw_lines[valid]
 
 if (length(ids) == 0) stop("No valid GB-IDs found in file.")
 

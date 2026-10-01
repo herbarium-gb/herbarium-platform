@@ -23,19 +23,21 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 VALID_GB_ID = re.compile(r"^GB-\d{7}$")
+EXTRACT_GB_ID = re.compile(r"(GB-\d{7})")
 
 
 def load_ids(path: str) -> list[str]:
     ids = []
     with open(path) as f:
         for raw in f:
-            id_ = raw.strip()
-            if not id_ or id_.startswith("#"):
+            line = raw.strip()
+            if not line or line.startswith("#"):
                 continue
-            if not VALID_GB_ID.match(id_):
-                print(f"  [skip] invalid ID: {id_!r}", flush=True)
+            m = EXTRACT_GB_ID.search(line)
+            if not m:
+                print(f"  [skip] no GB-ID found: {line!r}", flush=True)
                 continue
-            ids.append(id_)
+            ids.append(m.group(1))
     return ids
 
 
