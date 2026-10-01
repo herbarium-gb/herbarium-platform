@@ -2,6 +2,75 @@
     # email you@example.com
 }
 
+# IIIF-regler, gemensamma för prod och stage.
+# Användning: import iiif <RAIS-tjänst>
+(iiif) {
+    # Korta bildadresser: /GB-1155095.jpg → 302 till
+    # /iiif/{rel}/GB-1155095.jp2/full/,3500/0/default.jpg
+    # {rel} slås upp i samma shard-fil som visaren läser (/idx/<shard>.json).
+    # Shard-nyckeln (grupp 2) ska matcha shardKeyFor() i viewer/*/index.html:
+    # 7 tecken (GB-1155), eller 14 för GB-Folder_-ID:n (GB-Folder_0018).
+    @iiif_short path_regexp short ^/((GB-(?:Folder_)?\d{4})\d{3})\.jpg$
+    handle @iiif_short {
+        intercept {
+            @found header X-Rel *
+            handle_response @found {
+                header -X-Rel
+                redir * /iiif/{resp.header.X-Rel}/{re.short.1}.jp2/full/,3500/0/default.jpg 302
+            }
+            handle_response {
+                header -Content-Length
+                respond "Image not found" 404
+            }
+        }
+        templates
+        respond `{{ $f := printf "/idx/%s.json" (placeholder "http.regexp.short.2") }}{{ if fileExists $f }}{{ with index (include $f | fromJson) (placeholder "http.regexp.short.1") }}{{ $.RespHeader.Set "X-Rel" . }}{{ end }}{{ end }}` 200
+    }
+
+    # Spärra dyra storlekar (CPU-tak ~0,5 bilder/s). Tillåtet storleksfält:
+    # w,  ,h  w,h  !w,h  med högst 3999 px. Allt annat — full, max, pct:,
+    # ^ (uppskalning) och tal ≥ 4000 — ger 403. Regionen spärras inte, så
+    # visarens rutor (t.ex. 0,0,4096,4096/1024,) och nedladdningarna
+    # full/1200, och full/3400, fungerar. info.json berörs inte.
+    @iiif_size_denied {
+        path_regexp \.jp2/[^/]+/[^/]+/[^/]+/[^/]+$
+        not path_regexp \.jp2/[^/]+/!?(?:\d{1,3}|[1-3]\d{3})?,(?:\d{1,3}|[1-3]\d{3})?/[^/]+/[^/]+$
+    }
+    handle @iiif_size_denied {
+        respond "Image size not allowed (max 3999 px)" 403
+    }
+
+    # IIIF info.json — cache en dag (innehåller bildmått, ändras ej)
+    @iiif_info path_regexp ^/iiif/.*/info\.json$
+    handle @iiif_info {
+        header {
+            Cache-Control "public, max-age=86400"
+            match status 2xx
+        }
+        reverse_proxy {args[0]}:12415 {
+            header_up Host {hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # IIIF bildregioner — cache en vecka, revaliderar därefter (self-heal om en bild rättas).
+    # Bara 2xx cachas, så att ett tillfälligt fel (502 när RAIS startar om) inte fastnar i webbläsaren.
+    handle /iiif* {
+        header {
+            Cache-Control "public, max-age=604800"
+            match status 2xx
+        }
+        reverse_proxy {args[0]}:12415 {
+            header_up Host {hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+}
+
 {$HOST_PROD} {
     root * /srv_prod
     encode gzip
@@ -12,28 +81,7 @@
         respond "ok\n" 200
     }
 
-    # IIIF info.json — cache kort (innehåller bildmått, ändras ej)
-    @iiif_info path_regexp ^/iiif/.*/info\.json$
-    handle @iiif_info {
-        header Cache-Control "public, max-age=86400"
-        reverse_proxy iiif_prod:12415 {
-            header_up Host {hostport}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # IIIF bildregioner — cache en vecka, revaliderar därefter (self-heal om en bild rättas)
-    handle /iiif* {
-        header Cache-Control "public, max-age=604800"
-        reverse_proxy iiif_prod:12415 {
-            header_up Host {hostport}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
+    import iiif iiif_prod
 
     # Shard index — must reflect new images immediately, so revalidate every time
     @idx path /idx/*
@@ -71,26 +119,7 @@
         respond "ok\n" 200
     }
 
-    @iiif_info path_regexp ^/iiif/.*/info\.json$
-    handle @iiif_info {
-        header Cache-Control "public, max-age=86400"
-        reverse_proxy iiif_stage:12415 {
-            header_up Host {hostport}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    handle /iiif* {
-        header Cache-Control "public, max-age=604800"
-        reverse_proxy iiif_stage:12415 {
-            header_up Host {hostport}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
+    import iiif iiif_stage
 
     # Shard index — must reflect new images immediately, so revalidate every time
     @idx path /idx/*
