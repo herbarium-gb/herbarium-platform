@@ -64,9 +64,14 @@ Files under `viewer/` and `data/` are directory mounts — a `git pull` on the
 server takes effect immediately, no container action.
 
 `caddy/Caddyfile.server` is a single-file mount: `git pull` and `caddy reload`
-do **not** pick it up. Run `docker compose ... up -d --force-recreate web`,
-then `sudo firewall-cmd --reload` — a container recreate otherwise displaces
-the public 80/443 → 8080/8443 forward and the site goes down until reload.
+do **not** pick it up. Run `docker compose ... up -d --force-recreate web`.
+
+If the site is down after a server reboot, check in this order:
+
+1. `systemctl is-enabled docker` should print `enabled`.
+2. `make ps-server` should show all containers running (otherwise `make up-server`).
+3. If the containers run but the site is unreachable from outside,
+   try `sudo firewall-cmd --reload` (restores the 80/443 → 8080/8443 forward).
 
 ## Makefile
 
