@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Herbarium GB — Batch Download</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #000;
+      color: #4CAF50;
+      font-family: 'Roboto', sans-serif;
+      margin: 2rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+    h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+    }
+    ol {
+      display: inline-block;
+      text-align: left;
+      color: #ccc;
+      max-width: 580px;
+      width: 100%;
+      padding-left: 1.4rem;
+      margin: 0 auto 2rem;
+    }
+    li { margin-bottom: 0.75rem; }
+    code {
+      font-family: monospace;
+      font-size: 0.9em;
+      color: #4CAF50;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.65rem 1rem;
+      border: 2px solid #4CAF50;
+      color: #4CAF50;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background-color 0.2s ease, color 0.2s ease;
+      letter-spacing: 0.2px;
+    }
+    .btn:hover { background-color: #4CAF50; color: #000; }
+    footer { margin-top: 3rem; font-size: 0.9rem; color: #777; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <h1>Herbarium GB<br><span style="font-size:1.4rem;color:#ccc;font-family:'Roboto',sans-serif;font-weight:400">Batch Download</span></h1>
+
+  <ol>
+    <li><a href="https://fmprod27.it.gu.se/fmi/webd/HBGBsearch" style="color:#4CAF50">Search our database</a> and export the results as a TSV file.</li>
+    <li>Download one of the scripts below.</li>
+    <li>Run the script with your TSV file. It downloads the images and skips files already downloaded, so you can stop and resume anytime.<br><br>
+      <strong>RStudio:</strong> Set <code>ids_file</code> to your TSV file and run the script.<br>
+      <strong>R:</strong> <code>Rscript batch_download.R export.tsv --base-url https://botmus.gu.se</code><br>
+      <strong>Python:</strong> <code>python3 batch_download.py export.tsv --base-url https://botmus.gu.se</code>
+    </li>
+  </ol>
+
+  <div class="btn-row">
+    <a class="btn" href="https://raw.githubusercontent.com/herbarium-gb/herbarium-platform/main/viewer/scripts/batch_download.R">⬇ R script</a>
+    <a class="btn" href="https://raw.githubusercontent.com/herbarium-gb/herbarium-platform/main/viewer/scripts/batch_download.py">⬇ Python script</a>
+  </div>
+
+  <footer>&copy; Herbarium GB</footer>
+
+</body>
+</html>
