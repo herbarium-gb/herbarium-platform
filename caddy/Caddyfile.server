@@ -92,7 +92,8 @@
     @health path /health
     handle @health {
         header Content-Type text/plain
-        respond "ok" 200
+        respond `ok
+` 200
     }
 
     import iiif iiif_prod
@@ -130,7 +131,8 @@
     @health path /health
     handle @health {
         header Content-Type text/plain
-        respond "ok" 200
+        respond `ok
+` 200
     }
 
     import iiif iiif_stage
