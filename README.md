@@ -131,9 +131,3 @@ Note: sizes above 3999px are blocked.
 Users can download multiple images at once via the instructions page at `/batch-download`.
 
 Scripts in `viewer/scripts/` (`batch_download.R` and `batch_download.py`) accept either a plain list of GB-IDs or a TSV export from FileMaker. Each script downloads images via the short URL format (`/<qr-id>.jpg`) and skips files already present in the output directory.
-
-## Notes
-
-- Real image data is not stored in the repo (mounted in production)
-- Viewer shards are generated files and ignored by Git
-- Certificates and runtime data are not tracked
