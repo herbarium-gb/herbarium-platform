@@ -106,9 +106,11 @@ Access should be restricted to trusted clients (e.g. a specific IPT IP).
 
 ## IIIF access
 
-Example:
+**Viewer** — `https://<base-url>/<qr-id>`
 
-`/iiif/2023/01/23/CP1_20230123_BATCH_0001/GB-0500017.jp2/info.json`
+**Direct download** — `https://<base-url>/<qr-id>.jpg`
+
+**Full IIIF** — `https://<base-url>/iiif/<rel-path>/<qr-id>.jp2/info.json`
 
 ## Batch download
 
