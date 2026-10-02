@@ -114,6 +114,7 @@
 
     handle {
         try_files {path} {path}/index.html /index.html
+        header Cache-Control no-cache
         file_server
     }
 
@@ -153,6 +154,7 @@
 
     handle {
         try_files {path} {path}/index.html /index.html
+        header Cache-Control no-cache
         file_server
     }
 
