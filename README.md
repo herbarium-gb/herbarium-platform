@@ -110,13 +110,27 @@ Access should be restricted to trusted clients (e.g. a specific IPT IP).
 
 **Direct download** — `https://<base-url>/<qr-id>.jpg`
 
-**Full IIIF** — `https://<base-url>/iiif/<rel-path>/<qr-id>.jp2/info.json`
+**Full IIIF** — `https://<base-url>/iiif/<rel-path>/<qr-id>.jp2/{region}/{size}/{rotation}/{quality}.{format}`
+
+Parameters follow the [IIIF Image API](https://iiif.io/api/image/2.1/):
+
+| Parameter | Example | Notes |
+|-----------|---------|-------|
+| region | `full` | Full image; or `x,y,w,h` for a crop |
+| size | `full` | Full resolution; `1200,` for 1200px wide |
+| rotation | `0` | Degrees clockwise |
+| quality | `default` | |
+| format | `jpg` | `jpg` or `png` |
+
+Note: sizes above 3999px are blocked.
+
+**Image metadata** — `https://<base-url>/iiif/<rel-path>/<qr-id>.jp2/info.json`
 
 ## Batch download
 
 Users can download multiple images at once via the instructions page at `/batch-download`.
 
-Scripts in `viewer/scripts/` (`batch_download.R` and `batch_download.py`) accept either a plain list of GB-IDs or a TSV export from FileMaker. Each script downloads images via the short URL format (`/GB-XXXXXXX.jpg`) and skips files already present in the output directory.
+Scripts in `viewer/scripts/` (`batch_download.R` and `batch_download.py`) accept either a plain list of GB-IDs or a TSV export from FileMaker. Each script downloads images via the short URL format (`/<qr-id>.jpg`) and skips files already present in the output directory.
 
 ## Notes
 
