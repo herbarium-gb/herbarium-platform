@@ -42,7 +42,7 @@ Copy and edit:
 
 ## Running locally
 
-`docker compose -f docker-compose.yml -f docker-compose.local.yml up -d`
+`docker compose -f compose.base.yml -f compose.local.yml up -d`
 or
 `make up-local`
 
@@ -51,7 +51,7 @@ or
 
 ## Running on server
 
-`docker compose -f docker-compose.yml -f docker-compose.server.yml up -d`
+`docker compose -f compose.base.yml -f compose.server.yml up -d`
 or
 `make up-server`
 
@@ -109,6 +109,12 @@ Access should be restricted to trusted clients (e.g. a specific IPT IP).
 Example:
 
 `/iiif/2023/01/23/CP1_20230123_BATCH_0001/GB-0500017.jp2/info.json`
+
+## Batch download
+
+Users can download multiple images at once via the instructions page at `/batch-download`.
+
+Scripts in `viewer/scripts/` (`batch_download.R` and `batch_download.py`) accept either a plain list of GB-IDs or a TSV export from FileMaker. Each script downloads images via the short URL format (`/GB-XXXXXXX.jpg`) and skips files already present in the output directory.
 
 ## Notes
 
