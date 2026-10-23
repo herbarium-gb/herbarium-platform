@@ -8,7 +8,7 @@ Platform for serving herbarium images using a IIIF image server (currently RAIS)
 - Uses Caddy for routing, clean URLs, and HTTPS
 - Uses OpenSeadragon for zoomable image viewing
 - Resolves image IDs to file paths with static JSON lookup files ("shards"), not a database
-- Hosts a PostgreSQL database used as the publication layer for specimen data (GBIF publishing, see herbarium-data) — the image viewer and Caddy do **not** use it
+- Hosts a PostgreSQL database used as the publication layer for specimen data (GBIF publishing, see herbarium-data) — the image viewer and Caddy do **not** use it yet
 - Supports three contexts:
   - local development
   - server staging
@@ -134,9 +134,6 @@ These are the only automated tests in the repo.
 The PostgreSQL database (schema in `db/init/`) is used for publishing specimen
 data to GBIF via IPT. Loading and publishing are handled by
 [herbarium-data](https://github.com/herbarium-gb/herbarium-data) — see its README.
-
-Nothing else in this repo uses the database: the viewer and Caddy never query
-it, and image lookup is done entirely with the shard files described above.
 
 Restrict database port access to the IPT server only via the host firewall.
 
