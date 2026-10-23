@@ -7,7 +7,8 @@ Platform for serving herbarium images using a IIIF image server (currently RAIS)
 - Serves large JP2 images via a IIIF-compliant image server
 - Uses Caddy for routing, clean URLs, and HTTPS
 - Uses OpenSeadragon for zoomable image viewing
-- Includes a PostgreSQL database that can be used as a publication layer for specimen data (e.g. via IPT)
+- Resolves image IDs to file paths with static JSON lookup files ("shards"), not a database
+- Hosts a PostgreSQL database used as the publication layer for specimen data (GBIF publishing, see herbarium-data) — the image viewer and Caddy do **not** use it
 - Supports three contexts:
   - local development
   - server staging
@@ -29,6 +30,39 @@ This means one web container can serve two different environments:
 
 So there is only one Caddy container, but it routes requests to different HTML roots and different backend services.
 
+## Image lookup (shards)
+
+Images are stored in delivery directories organized by date (e.g. `Delivery/2023/01/23/CP1_.../GB-0500017.jp2`), but URLs contain only the image ID (`/GB-0500017`).
+
+Static JSON shards map IDs to directories without a database or backend.
+
+1. `viewer/scripts/build_shards.py` scans `IMAGE_DATA_PATH` and maps each `.jp2` ID to its directory relative to the delivery root.
+2. Entries are grouped by ID prefix into small JSON files:
+   - `GB-0500017` → `GB-0500.json`
+   - `GB-Folder_0018345` → `GB-Folder_0018.json`
+3. Each shard (e.g. `viewer/prod/idx/GB-0500.json`) contains:
+   ```json
+   { "GB-0500017": "2023/01/23/CP1_20230123_BATCH_0001" }
+   ```
+4. The viewer derives the shard name from the ID, fetches `/idx/<shard>.json` and constructs the IIIF URL (`/iiif/<rel-path>/<id>.jp2/...`). Missing IDs are shown as "not found".
+5. Caddy uses the same shards for short download URLs (`/<id>.jpg`).
+
+**Keep shard-key rules in sync** across:
+- `shard_key_for()` in `build_shards.py`
+- `shardKeyFor()` in each `viewer/*/index.html`
+- `@iiif_short` regexp in `caddy/Caddyfile.server`
+
+### Rebuilding shards
+
+Shard files (`viewer/*/idx/`) are generated and git-ignored. Rebuild after each delivery, either fully or for a specific folder:
+
+```bash
+make shards-prod
+make shards-prod SUBPATH=2023/09/21/new-batch
+```
+
+The server serves `/idx/*` with `Cache-Control: no-cache`, making new images available once the shards are updated.
+
 ## Requirements
 
 - Docker + Docker Compose (or Podman equivalents)
@@ -38,7 +72,7 @@ So there is only one Caddy container, but it routes requests to different HTML r
 
 Copy and edit:
 
-`cp .env.example .env`
+`cp .env.template .env`
 
 ## Running locally
 
@@ -81,28 +115,40 @@ See the `Makefile` for available commands.
 
 ## Tests
 
-`viewer/scripts/test_build_shards.py` covers `build_shards.py`'s shard-key
-spreading and full/partial-run reconciliation (what gets dropped vs. left
-alone) — run it with the same interpreter used for the script itself, so
-`python-dotenv` is importable:
+`viewer/scripts/test_build_shards.py` checks that `build_shards.py` puts IDs in
+the right shard files, and that rebuilding — fully or for a single folder —
+adds new images, removes deleted ones and leaves everything else untouched.
+
+Run it in a Python environment where `python-dotenv` is installed:
 
 ```
+python3 -m venv viewer/.venv
+viewer/.venv/bin/pip install -r viewer/scripts/requirements.txt
 viewer/.venv/bin/python viewer/scripts/test_build_shards.py -v
 ```
 
-No other part of the repo has automated tests yet.
+These are the only automated tests in the repo.
 
 ## PostgreSQL and IPT
 
-The included PostgreSQL database is intended as a publication layer for specimen data.
+The PostgreSQL database (schema in `db/init/`) is used for publishing specimen
+data to GBIF via IPT. Loading and publishing are handled by
+[herbarium-data](https://github.com/herbarium-gb/herbarium-data) — see its README.
 
-Typical use:
+Nothing else in this repo uses the database: the viewer and Caddy never query
+it, and image lookup is done entirely with the shard files described above.
 
-- data is prepared externally (e.g. via [herbarium-data](https://github.com/herbarium-gb/herbarium-data))
-- data is loaded into PostgreSQL
-- IPT connects directly to the database and publishes datasets
+Restrict database port access to the IPT server only via the host firewall.
 
-Access should be restricted to trusted clients (e.g. a specific IPT IP).
+IPT connects as the read-only `ipt_herbarium` role, which can only read
+`public.dwc_occurrence`. It is created from `PG_IPT_PASSWORD` in `.env` when the
+database is first initialised. On an existing database, set the variable,
+recreate the container and run the script by hand:
+
+```
+docker compose -f compose.base.yml -f compose.server.yml up -d --force-recreate db
+docker compose -f compose.base.yml -f compose.server.yml exec db bash /docker-entrypoint-initdb.d/002_ipt_role.sh
+```
 
 ## IIIF access
 

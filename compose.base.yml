@@ -6,6 +6,7 @@ services:
       POSTGRES_DB: ${PGDATABASE}
       POSTGRES_USER: ${PGUSER}
       POSTGRES_PASSWORD: ${PGPASSWORD}
+      PG_IPT_PASSWORD: ${PG_IPT_PASSWORD:-}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
