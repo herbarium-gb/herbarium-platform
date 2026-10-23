@@ -41,7 +41,7 @@
         respond `{{ $f := printf "/idx/%s.json" (placeholder "http.regexp.short.2") }}{{ if fileExists $f }}{{ with index (include $f | fromJson) (placeholder "http.regexp.short.1") }}{{ $.RespHeader.Set "X-Rel" . }}{{ end }}{{ end }}` 200
     }
 
-    # Block expensive sizes (CPU ceiling ~0.5 images/s). Allowed size field:
+    # Block expensive sizes (CPU ceiling ~1.5 images/s on 6 cores). Allowed size field:
     # w,  ,h  w,h  !w,h  with at most 3999 px. Everything else — full, max, pct:,
     # ^ (upscaling) and numbers ≥ 4000 — gets 403. The region is not restricted,
     # so viewer tiles (e.g. 0,0,4096,4096/1024,) and the downloads
