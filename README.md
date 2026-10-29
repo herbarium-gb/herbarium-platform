@@ -137,6 +137,20 @@ data to GBIF via IPT. Loading and publishing are handled by
 
 Restrict database port access to the IPT server only via the host firewall.
 
+To reach the database from your own machine (psql, a GUI client, loading
+scripts), use an SSH tunnel instead of opening the port. Example
+`~/.ssh/config` entry (replace the placeholders):
+
+```
+Host herbarium-db
+  HostName <server-hostname>
+  User <your-ssh-user>
+  LocalForward 5433 localhost:5432
+```
+
+Start the tunnel with `ssh -N herbarium-db` and connect to `localhost:5433`.
+The local port is arbitrary; 5433 avoids clashing with a local PostgreSQL.
+
 IPT connects as the read-only `ipt_herbarium` role, which can only read
 `public.dwc_occurrence`. It is created from `PG_IPT_PASSWORD` in `.env` when the
 database is first initialised. On an existing database, set the variable,
